@@ -28,7 +28,7 @@ jobs:
       - name: Generate HTML
         run: |
           mkdir -p docs
-          python robinhood_like_chart.py --ticker NVDA --period 5d --default_interval 5m --out docs/index.html
+          python chart.py --ticker NVDA --period 5d --default_interval 5m --out docs/index.html
 
       - name: Commit and push if changed
         run: |

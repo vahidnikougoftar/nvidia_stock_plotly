@@ -26,6 +26,7 @@ import yfinance as yf
 import plotly.graph_objects as go
 import plotly.io as pio
 
+from datetime import datetime, timezone, timedelta
 
 @dataclass(frozen=True)
 class IntervalSpec:
@@ -199,7 +200,7 @@ def build_figure(dfs: Dict[str, pd.DataFrame], ticker: str, default_interval: st
     return fig
 
 
-def make_html(fig: go.Figure, ticker: str, default_interval: str) -> str:
+def make_html(fig: go.Figure, ticker: str, default_interval: str,generated_utc: str) -> str:
     # Embed plotly as CDN for a smaller file
     plot_div = pio.to_html(fig, include_plotlyjs="cdn", full_html=False, div_id="chart")
 
@@ -350,6 +351,9 @@ def make_html(fig: go.Figure, ticker: str, default_interval: str) -> str:
         <span class="kv"><span class="lbl">C</span><b id="c">—</b></span>
         <span class="kv"><span class="lbl">V</span><b id="v">—</b></span>
       </div>
+        <div style="margin-left:auto; color: rgba(255,255,255,0.65); font-variant-numeric: tabular-nums;">
+          Last updated: <b style="color: rgba(255,255,255,0.92);">{generated_utc}</b>
+        </div>
     </div>
 
     <div class="panel">
@@ -430,6 +434,9 @@ def make_html(fig: go.Figure, ticker: str, default_interval: str) -> str:
     if (autoscale.checked) {{
       Plotly.relayout(gd, {{"yaxis.autorange": true}});
     }}
+    // default X view to last 2 hours
+    setTimeout(() => setLastTwoHoursView(intervalKey),0);
+
   }}
 
   // ---------- Hover -> update top OHLCV strip ----------
@@ -462,6 +469,22 @@ def make_html(fig: go.Figure, ticker: str, default_interval: str) -> str:
     const last = trace.customdata[trace.customdata.length - 1];
     setOHLCV(last[0], last[1], last[2], last[3], last[4]);
   }}
+
+  // ---------- Show last Two Hours View As Default ----------- //
+   function setLastTwoHoursView(intervalKey) {{
+  const candleIdx = traceMap[intervalKey][0];
+  const trace = gd.data[candleIdx];
+  if (!trace || !trace.x || trace.x.length < 2) return;
+
+  const end = new Date(trace.x[trace.x.length - 1]).getTime();
+  const start = end - (2 * 60 * 60 * 1000); // 2 hours
+
+  Plotly.relayout(gd, {{
+    "xaxis.autorange": false,
+    "xaxis.range": [new Date(start).toISOString(), new Date(end).toISOString()]
+  }});
+}}
+
 
   // ---------- Bottom dropdown ----------
   intervalSelect.addEventListener("change", () => {{
@@ -560,7 +583,8 @@ def main():
         dfs[k] = df1m if k == "1m" else resample_ohlcv(df1m, spec.rule)
 
     fig = build_figure(dfs, args.ticker, args.default_interval)
-    html = make_html(fig, args.ticker, args.default_interval)
+    generated_utc = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+    html = make_html(fig, args.ticker, args.default_interval,generated_utc)
 
     with open(args.out, "w", encoding="utf-8") as f:
         f.write(html)
