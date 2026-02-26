@@ -12,7 +12,7 @@ Install:
   pip install yfinance pandas plotly
 
 Run:
-  python robinhood_like_chart.py --ticker NVDA --period 5d --out nvda_robinhood_like.html
+  python robinhood_like_chart.py --ticker NVDA --period 5d --out docs/index.html
 Open the HTML in your browser.
 """
 
