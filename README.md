@@ -1,0 +1,1 @@
+This repo is capturing NVDA stock price every hour (via Github Actions) and updates a plotly based visualization on the ticker price that is interactive. This was an awesome practice on Plotly, CI/CD on github, and Github Actions.
